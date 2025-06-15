@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wedding Seating Arrangement Solver</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Lato', sans-serif;
+            background-color: #fdfaf6;
+            color: #5d5d5d;
+        }
+        h1, h2, h3 {
+            font-family: 'Playfair Display', serif;
+            color: #4a4a4a;
+        }
+        .table-circle {
+            width: 200px;
+            height: 200px;
+            border: 2px dashed #d4af37;
+            border-radius: 50%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            background: white;
+        }
+        .seat {
+            position: absolute;
+            background-color: #d4af37;
+            color: white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            text-align: center;
+            padding: 2px;
+            line-height: 1.2;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+        .guest-tag {
+            background-color: #f0e6d2;
+            color: #5d5d5d;
+            border: 1px solid #d4af37;
+        }
+        .btn-primary {
+            background-color: #d4af37;
+            color: white;
+            transition: background-color 0.3s ease;
+        }
+        .btn-primary:hover {
+            background-color: #c8a02a;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: #fdfaf6;
+            margin: 10% auto;
+            padding: 2rem;
+            border: 1px solid #d4af37;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: #4a4a4a;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-7xl mx-auto">
+        <header class="text-center mb-10">
+            <h1 class="text-4xl md:text-5xl font-bold">Wedding Seating Solver</h1>
+            <p class="mt-2 text-lg text-gray-600">Arrange your guests effortlessly.</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Controls Column -->
+            <div class="lg:col-span-1 bg-white p-6 rounded-lg shadow-lg">
+                <h2 class="text-2xl font-bold mb-4 border-b pb-2">Configuration</h2>
+                
+                <!-- Guests -->
+                <div class="mb-6">
+                    <h3 class="text-xl font-semibold mb-3">Guest List (<span id="guest-count">0</span>)</h3>
+                    <div id="guest-list-container" class="max-h-48 overflow-y-auto bg-gray-50 p-3 rounded-md mb-3 flex flex-wrap gap-2">
+                        <!-- Guest tags will be injected here -->
+                    </div>
+                    <div class="flex gap-2">
+                        <input type="text" id="new-guest-input" placeholder="Add guest name" class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-d4af37">
+                        <button id="add-guest-btn" class="btn-primary px-4 py-2 rounded-md font-semibold">Add</button>
+                    </div>
+                </div>
+
+                <!-- Together Constraints -->
+                <div class="mb-6">
+                    <h3 class="text-xl font-semibold mb-3">Must Sit Together</h3>
+                    <div id="together-list" class="space-y-2 mb-3">
+                        <!-- Together pairs will be injected here -->
+                    </div>
+                    <div class="flex gap-2">
+                        <select id="together-p1" class="w-full border rounded-md p-2 bg-white"></select>
+                        <span class="p-2">&</span>
+                        <select id="together-p2" class="w-full border rounded-md p-2 bg-white"></select>
+                        <button id="add-together-btn" class="btn-primary px-4 py-2 rounded-md font-semibold">+</button>
+                    </div>
+                </div>
+
+                <!-- Apart Constraints -->
+                <div class="mb-6">
+                    <h3 class="text-xl font-semibold mb-3">Must Sit Apart</h3>
+                     <div id="apart-list" class="space-y-2 mb-3">
+                        <!-- Apart pairs will be injected here -->
+                    </div>
+                    <div class="flex gap-2">
+                        <select id="apart-p1" class="w-full border rounded-md p-2 bg-white"></select>
+                        <span class="p-2">≠</span>
+                        <select id="apart-p2" class="w-full border rounded-md p-2 bg-white"></select>
+                        <button id="add-apart-btn" class="btn-primary px-4 py-2 rounded-md font-semibold">+</button>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div>
+                    <button id="solve-btn" class="w-full btn-primary py-3 rounded-md text-lg font-bold">Find Seating Arrangement</button>
+                     <div id="solution-nav" class="hidden items-center justify-between mt-4">
+                        <button id="prev-solution" class="btn-primary px-4 py-2 rounded-md">&lt; Prev</button>
+                        <span id="solution-info"></span>
+                        <button id="next-solution" class="btn-primary px-4 py-2 rounded-md">Next &gt;</button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Seating Arrangement Column -->
+            <div class="lg:col-span-2">
+                 <div id="loading-spinner" class="hidden text-center p-10">
+                    <svg class="animate-spin h-10 w-10 text-d4af37 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p class="mt-4 text-lg font-semibold">Finding the perfect spot for everyone...</p>
+                </div>
+                <div id="tables-container" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 justify-items-center">
+                    <!-- Tables will be dynamically generated here -->
+                </div>
+                 <div id="message-area" class="text-center mt-8 p-4 rounded-lg"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal for Messages -->
+    <div id="message-modal" class="modal">
+        <div class="modal-content text-center">
+            <span class="close-button" id="modal-close-btn">&times;</span>
+            <h2 id="modal-title" class="text-2xl mb-4">Notification</h2>
+            <p id="modal-text" class="text-lg"></p>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- INITIAL DATA ---
+            const initialGuests = ['sarah', 'benni', 'peter', 'gaby', 'simon', 'corinna', 'siegrid', 'erika', 'larissa', 'herwig', 'liam', 'gabi', 'michi', 'brigitte', 'fredi', 'natascha', 'daniel1', 'felix', 'anna1', 'karin', 'sebastian', 'anna2', 'joni', 'leni', 'betti', 'daniel2', 'christiane', 'harald', 'theodor', 'pauline', 'heidi', 'rudi', 'regina', 'amelie', 'paul', 'tobias', 'patrick', 'melina', 'stefan'];
+            const initialTogether = [['sarah', 'benni'], ['simon', 'corinna'], ['gaby', 'peter'], ['larissa', 'herwig'], ['herwig', 'liam'], ['michi', 'gabi'], ['joni', 'leni'], ['benni', 'joni'], ['sarah', 'simon'], ['sebastian', 'anna1'], ['rudi', 'heidi'], ['betti', 'karin'], ['anna2', 'felix'], ['natascha', 'daniel1'], ['brigitte', 'fredi'], ['natascha', 'felix']];
+            const initialApart = [['peter', 'siegrid'], ['erika', 'peter'], ['siegrid', 'betti']];
+            const TABLE_COUNT = 5;
+            const TABLE_CAPACITY = 8;
+
+            let guests = [];
+            let togetherPairs = [];
+            let apartPairs = [];
+            let solutions = [];
+            let currentSolutionIndex = 0;
+
+            // --- UI ELEMENT REFERENCES ---
+            const guestCountEl = document.getElementById('guest-count');
+            const guestListContainer = document.getElementById('guest-list-container');
+            const newGuestInput = document.getElementById('new-guest-input');
+            const addGuestBtn = document.getElementById('add-guest-btn');
+            const togetherListEl = document.getElementById('together-list');
+            const apartListEl = document.getElementById('apart-list');
+            const togetherP1Select = document.getElementById('together-p1');
+            const togetherP2Select = document.getElementById('together-p2');
+            const addTogetherBtn = document.getElementById('add-together-btn');
+            const apartP1Select = document.getElementById('apart-p1');
+            const apartP2Select = document.getElementById('apart-p2');
+            const addApartBtn = document.getElementById('add-apart-btn');
+            const solveBtn = document.getElementById('solve-btn');
+            const tablesContainer = document.getElementById('tables-container');
+            const messageArea = document.getElementById('message-area');
+            const loadingSpinner = document.getElementById('loading-spinner');
+            const solutionNav = document.getElementById('solution-nav');
+            const prevSolutionBtn = document.getElementById('prev-solution');
+            const nextSolutionBtn = document.getElementById('next-solution');
+            const solutionInfo = document.getElementById('solution-info');
+            const modal = document.getElementById('message-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalText = document.getElementById('modal-text');
+            const modalCloseBtn = document.getElementById('modal-close-btn');
+
+            // --- CORE UI FUNCTIONS ---
+            
+            function showModal(title, text) {
+                modalTitle.textContent = title;
+                modalText.textContent = text;
+                modal.style.display = 'block';
+            }
+            
+            modalCloseBtn.onclick = () => modal.style.display = 'none';
+            window.onclick = (event) => {
+                if (event.target == modal) {
+                    modal.style.display = 'none';
+                }
+            };
+
+            const updateGuestListUI = () => {
+                guestListContainer.innerHTML = '';
+                guests.sort().forEach(guest => {
+                    const tag = document.createElement('span');
+                    tag.className = 'guest-tag px-2 py-1 rounded-full text-sm flex items-center';
+                    tag.textContent = guest;
+                    const removeBtn = document.createElement('button');
+                    removeBtn.innerHTML = '&times;';
+                    removeBtn.className = 'ml-2 text-red-500 hover:text-red-800 font-bold';
+                    removeBtn.onclick = () => removeGuest(guest);
+                    tag.appendChild(removeBtn);
+                    guestListContainer.appendChild(tag);
+                });
+                guestCountEl.textContent = guests.length;
+                updateDropdowns();
+            };
+
+            const updateDropdowns = () => {
+                const options = guests.map(g => `<option value="${g}">${g}</option>`).join('');
+                [togetherP1Select, togetherP2Select, apartP1Select, apartP2Select].forEach(sel => sel.innerHTML = options);
+            };
+            
+            const updatePairsUI = (listEl, pairs, type) => {
+                listEl.innerHTML = '';
+                pairs.forEach((pair, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center justify-between bg-gray-100 p-2 rounded-md';
+                    const symbol = type === 'together' ? '&' : '≠';
+                    div.innerHTML = `<span>${pair[0]} ${symbol} ${pair[1]}</span>`;
+                    const removeBtn = document.createElement('button');
+                    removeBtn.innerHTML = '&times;';
+                    removeBtn.className = 'text-red-500 hover:text-red-800 font-bold px-2';
+                    removeBtn.onclick = () => removePair(index, type);
+                    div.appendChild(removeBtn);
+                    listEl.appendChild(div);
+                });
+            };
+
+            // --- DATA MANAGEMENT FUNCTIONS ---
+            const addGuest = (name) => {
+                name = name.trim().toLowerCase();
+                if (name && !guests.includes(name)) {
+                    guests.push(name);
+                    updateGuestListUI();
+                    newGuestInput.value = '';
+                } else if(guests.includes(name)){
+                    showModal("Duplicate Guest", `Guest '${name}' is already on the list.`);
+                }
+            };
+
+            const removeGuest = (name) => {
+                guests = guests.filter(g => g !== name);
+                // Also remove any constraints involving this guest
+                togetherPairs = togetherPairs.filter(p => !p.includes(name));
+                apartPairs = apartPairs.filter(p => !p.includes(name));
+                updateAllUI();
+            };
+
+            const addPair = (type) => {
+                const p1Select = type === 'together' ? togetherP1Select : apartP1Select;
+                const p2Select = type === 'together' ? togetherP2Select : apartP2Select;
+                const p1 = p1Select.value;
+                const p2 = p2Select.value;
+                
+                if (!p1 || !p2) {
+                     showModal("Selection Error", "Please select two guests.");
+                     return;
+                }
+                if (p1 === p2) {
+                    showModal("Invalid Pair", "A guest cannot be paired with themselves.");
+                    return;
+                }
+                const newPair = [p1, p2].sort();
+                const pairs = type === 'together' ? togetherPairs : apartPairs;
+                
+                const exists = pairs.some(p => p[0] === newPair[0] && p[1] === newPair[1]);
+                if (!exists) {
+                    pairs.push(newPair);
+                    updatePairsUI(type === 'together' ? togetherListEl : apartListEl, pairs, type);
+                } else {
+                    showModal("Duplicate Pair", "This pair already exists in the list.");
+                }
+            };
+
+            const removePair = (index, type) => {
+                const pairs = type === 'together' ? togetherPairs : apartPairs;
+                pairs.splice(index, 1);
+                updatePairsUI(type === 'together' ? togetherListEl : apartListEl, pairs, type);
+            };
+            
+            const updateAllUI = () => {
+                updateGuestListUI();
+                updatePairsUI(togetherListEl, togetherPairs, 'together');
+                updatePairsUI(apartListEl, apartPairs, 'apart');
+            };
+
+            const drawTables = (solution) => {
+                tablesContainer.innerHTML = '';
+                 if (!solution || solution.length === 0) {
+                     messageArea.textContent = 'No seating arrangement found. Try adjusting constraints.';
+                     messageArea.className = 'text-center mt-8 p-4 rounded-lg bg-red-100 text-red-800';
+                    return;
+                }
+                messageArea.textContent = '';
+                messageArea.className = 'text-center mt-8 p-4 rounded-lg';
+
+                solution.forEach((tableGuests, index) => {
+                    const tableWrapper = document.createElement('div');
+                    tableWrapper.className = 'flex flex-col items-center';
+
+                    const tableEl = document.createElement('div');
+                    tableEl.className = 'table-circle';
+                    
+                    const tableName = document.createElement('h3');
+                    tableName.className = 'text-xl font-bold';
+                    tableName.textContent = `Table ${index + 1}`;
+                    tableEl.appendChild(tableName);
+                    
+                    const tableCount = document.createElement('p');
+                    tableCount.className = 'text-sm text-gray-500';
+                    tableCount.textContent = `${tableGuests.length} / ${TABLE_CAPACITY}`;
+                    tableEl.appendChild(tableCount);
+
+                    tableGuests.sort().forEach((guest, seatIndex) => {
+                        const angle = (seatIndex / TABLE_CAPACITY) * 2 * Math.PI - (Math.PI / 2); // Start at top
+                        const x = 90 * Math.cos(angle);
+                        const y = 90 * Math.sin(angle);
+
+                        const seatEl = document.createElement('div');
+                        seatEl.className = 'seat';
+                        seatEl.textContent = guest;
+                        seatEl.style.transform = `translate(${x}px, ${y}px)`;
+                        tableEl.appendChild(seatEl);
+                    });
+                    tableWrapper.appendChild(tableEl);
+                    tablesContainer.appendChild(tableWrapper);
+                });
+            };
+
+            // --- SOLVER LOGIC ---
+            function solveSeating() {
+                // 1. Group guests who must sit together
+                const { groups, individualGuests } = groupGuests();
+
+                // 2. Check for immediate impossibilities
+                if (groups.some(g => g.length > TABLE_CAPACITY)) {
+                    showModal("Impossible Arrangement", "A 'together' group is larger than the table capacity.");
+                    return [];
+                }
+                const totalGroupedGuests = groups.reduce((acc, g) => acc + g.length, 0);
+                if ((totalGroupedGuests + individualGuests.length) > (TABLE_COUNT * TABLE_CAPACITY)) {
+                    showModal("Impossible Arrangement", "There are more guests than available seats.");
+                    return [];
+                }
+
+                // 3. Setup for backtracking
+                const itemsToPlace = [...groups, ...individualGuests.map(g => [g])];
+                const finalSolutions = [];
+                const currentArrangement = Array.from({ length: TABLE_COUNT }, () => []);
+
+                backtrack(0, itemsToPlace, currentArrangement, finalSolutions);
+                
+                return finalSolutions;
+            }
+            
+            // --- BUG FIX: Replaced original groupGuests function ---
+            // This version is more robust and ensures all guests are accounted for.
+            function groupGuests() {
+                const adj = new Map();
+                guests.forEach(g => adj.set(g, []));
+                togetherPairs.forEach(([p1, p2]) => {
+                    adj.get(p1).push(p2);
+                    adj.get(p2).push(p1);
+                });
+
+                const visited = new Set();
+                const groups = [];
+                const individualGuests = [];
+
+                for (const guest of guests) {
+                    if (!visited.has(guest)) {
+                        const component = [];
+                        const queue = [guest];
+                        visited.add(guest);
+
+                        while (queue.length > 0) {
+                            const current = queue.shift();
+                            component.push(current);
+                            // Note: Safely accessing neighbors even if guest isn't in a pair
+                            (adj.get(current) || []).forEach(neighbor => {
+                                if (!visited.has(neighbor)) {
+                                    visited.add(neighbor);
+                                    queue.push(neighbor);
+                                }
+                            });
+                        }
+                        
+                        if (component.length > 1) {
+                            groups.push(component);
+                        } else if (component.length === 1) {
+                            individualGuests.push(component[0]);
+                        }
+                    }
+                }
+                return { groups, individualGuests };
+            }
+
+            function isPlacementValid(item, table, arrangement) {
+                // Check capacity
+                if (arrangement[table].length + item.length > TABLE_CAPACITY) {
+                    return false;
+                }
+                
+                // Check "apart" constraints for every person in the item against every person at the table
+                const tableGuests = arrangement[table];
+                for (const newItemGuest of item) {
+                    for (const existingGuest of tableGuests) {
+                        if (isApart(newItemGuest, existingGuest)) {
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            }
+
+            function isApart(p1, p2) {
+                const pair = [p1, p2].sort();
+                return apartPairs.some(ap => ap[0] === pair[0] && ap[1] === pair[1]);
+            }
+
+            function backtrack(itemIndex, items, arrangement, finalSolutions) {
+                if (finalSolutions.length >= 20) return; // Limit number of solutions for performance
+                
+                if (itemIndex === items.length) {
+                    finalSolutions.push(arrangement.map(t => [...t])); // Found a solution
+                    return;
+                }
+
+                const currentItem = items[itemIndex];
+
+                for (let tableIdx = 0; tableIdx < TABLE_COUNT; tableIdx++) {
+                    if (isPlacementValid(currentItem, tableIdx, arrangement)) {
+                        arrangement[tableIdx].push(...currentItem);
+                        backtrack(itemIndex + 1, items, arrangement, finalSolutions);
+                        // Backtrack: remove the item
+                        arrangement[tableIdx].splice(arrangement[tableIdx].length - currentItem.length);
+                        
+                        if (finalSolutions.length >= 20) return;
+                    }
+                }
+            }
+
+
+            // --- EVENT LISTENERS ---
+            addGuestBtn.addEventListener('click', () => addGuest(newGuestInput.value));
+            newGuestInput.addEventListener('keypress', (e) => {
+                if(e.key === 'Enter') addGuest(newGuestInput.value);
+            });
+            addTogetherBtn.addEventListener('click', () => addPair('together'));
+            addApartBtn.addEventListener('click', () => addPair('apart'));
+
+            solveBtn.addEventListener('click', () => {
+                loadingSpinner.style.display = 'block';
+                tablesContainer.innerHTML = '';
+                messageArea.textContent = '';
+                solutionNav.classList.add('hidden');
+                
+                // Allow UI to update before heavy computation
+                setTimeout(() => {
+                    solutions = solveSeating();
+                    loadingSpinner.style.display = 'none';
+                    
+                    if (solutions.length > 0) {
+                        currentSolutionIndex = 0;
+                        drawTables(solutions[0]);
+                        solutionNav.classList.remove('hidden');
+                        solutionInfo.textContent = `Solution 1 of ${solutions.length}`;
+                    } else {
+                        drawTables(null); // Will show error message
+                        showModal("No Solution Found", "Could not find any valid seating arrangements with the current rules. Try removing some constraints.");
+                    }
+                }, 50);
+            });
+            
+            prevSolutionBtn.addEventListener('click', () => {
+                if (currentSolutionIndex > 0) {
+                    currentSolutionIndex--;
+                    drawTables(solutions[currentSolutionIndex]);
+                    solutionInfo.textContent = `Solution ${currentSolutionIndex + 1} of ${solutions.length}`;
+                }
+            });
+
+            nextSolutionBtn.addEventListener('click', () => {
+                 if (currentSolutionIndex < solutions.length - 1) {
+                    currentSolutionIndex++;
+                    drawTables(solutions[currentSolutionIndex]);
+                    solutionInfo.textContent = `Solution ${currentSolutionIndex + 1} of ${solutions.length}`;
+                }
+            });
+
+            // --- INITIALIZATION ---
+            function initialize() {
+                guests = [...initialGuests];
+                togetherPairs = initialTogether.map(p => p.sort());
+                apartPairs = initialApart.map(p => p.sort());
+                
+                updateAllUI();
+                drawTables(Array.from({ length: TABLE_COUNT }, () => [])); // Draw empty tables
+            }
+
+            initialize();
+        });
+    </script>
+</body>
+</html>
