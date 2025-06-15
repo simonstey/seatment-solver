@@ -30,6 +30,7 @@
             flex-direction: column;
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
             background: white;
+            flex-shrink: 0;
         }
         .seat {
             position: absolute;
@@ -93,6 +94,24 @@
         .close-button:focus {
             color: #4a4a4a;
         }
+        .tab-btn {
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s ease-in-out;
+        }
+        .active-tab {
+            color: #d4af37;
+            border-bottom-color: #d4af37;
+            font-weight: 600;
+        }
+        .tab-content {
+            display: none;
+        }
+        .active {
+            display: block;
+        }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -105,51 +124,60 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <!-- Controls Column -->
-            <div class="lg:col-span-1 bg-white p-6 rounded-lg shadow-lg">
-                <h2 class="text-2xl font-bold mb-4 border-b pb-2">Configuration</h2>
-                
-                <!-- Guests -->
-                <div class="mb-6">
-                    <h3 class="text-xl font-semibold mb-3">Guest List (<span id="guest-count">0</span>)</h3>
-                    <div id="guest-list-container" class="max-h-48 overflow-y-auto bg-gray-50 p-3 rounded-md mb-3 flex flex-wrap gap-2">
-                        <!-- Guest tags will be injected here -->
-                    </div>
-                    <div class="flex gap-2">
-                        <input type="text" id="new-guest-input" placeholder="Add guest name" class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-d4af37">
-                        <button id="add-guest-btn" class="btn-primary px-4 py-2 rounded-md font-semibold">Add</button>
-                    </div>
-                </div>
-
-                <!-- Together Constraints -->
-                <div class="mb-6">
-                    <h3 class="text-xl font-semibold mb-3">Must Sit Together</h3>
-                    <div id="together-list" class="space-y-2 mb-3">
-                        <!-- Together pairs will be injected here -->
-                    </div>
-                    <div class="flex gap-2">
-                        <select id="together-p1" class="w-full border rounded-md p-2 bg-white"></select>
-                        <span class="p-2">&</span>
-                        <select id="together-p2" class="w-full border rounded-md p-2 bg-white"></select>
-                        <button id="add-together-btn" class="btn-primary px-4 py-2 rounded-md font-semibold">+</button>
-                    </div>
-                </div>
-
-                <!-- Apart Constraints -->
-                <div class="mb-6">
-                    <h3 class="text-xl font-semibold mb-3">Must Sit Apart</h3>
-                     <div id="apart-list" class="space-y-2 mb-3">
-                        <!-- Apart pairs will be injected here -->
-                    </div>
-                    <div class="flex gap-2">
-                        <select id="apart-p1" class="w-full border rounded-md p-2 bg-white"></select>
-                        <span class="p-2">≠</span>
-                        <select id="apart-p2" class="w-full border rounded-md p-2 bg-white"></select>
-                        <button id="add-apart-btn" class="btn-primary px-4 py-2 rounded-md font-semibold">+</button>
-                    </div>
-                </div>
-                
-                <!-- Action Buttons -->
+            <div class="lg:col-span-1 bg-white p-6 rounded-lg shadow-lg flex flex-col" style="max-height: 85vh;">
                 <div>
+                    <h2 class="text-2xl font-bold">Configuration</h2>
+                    <div class="flex border-b mt-4">
+                        <button id="guests-tab-btn" class="tab-btn active-tab" data-tab="guests">Guests</button>
+                        <button id="together-tab-btn" class="tab-btn" data-tab="together">Together</button>
+                        <button id="apart-tab-btn" class="tab-btn" data-tab="apart">Apart</button>
+                    </div>
+                </div>
+
+                <div class="flex-grow py-4 overflow-y-auto">
+                    <!-- Guests Tab -->
+                    <div id="guests-tab-content" class="tab-content active">
+                        <h3 class="text-xl font-semibold mb-3">Guest List (<span id="guest-count">0</span>)</h3>
+                        <div id="guest-list-container" class="max-h-64 overflow-y-auto bg-gray-50 p-3 rounded-md mb-3 flex flex-wrap gap-2">
+                            <!-- Guest tags will be injected here -->
+                        </div>
+                        <div class="flex gap-2">
+                            <input type="text" id="new-guest-input" placeholder="Add guest name" class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-d4af37">
+                            <button id="add-guest-btn" class="btn-primary px-4 py-2 rounded-md font-semibold">Add</button>
+                        </div>
+                    </div>
+
+                    <!-- Together Tab -->
+                    <div id="together-tab-content" class="tab-content">
+                        <h3 class="text-xl font-semibold mb-3">Must Sit Together</h3>
+                        <div class="flex gap-2 mb-3">
+                            <select id="together-p1" class="w-full border rounded-md p-2 bg-white"></select>
+                            <span class="p-2">&</span>
+                            <select id="together-p2" class="w-full border rounded-md p-2 bg-white"></select>
+                            <button id="add-together-btn" class="btn-primary px-4 py-2 rounded-md font-semibold">+</button>
+                        </div>
+                        <div id="together-list" class="space-y-2 max-h-64 overflow-y-auto">
+                            <!-- Together pairs will be injected here -->
+                        </div>
+                    </div>
+
+                    <!-- Apart Tab -->
+                    <div id="apart-tab-content" class="tab-content">
+                        <h3 class="text-xl font-semibold mb-3">Must Sit Apart</h3>
+                        <div class="flex gap-2 mb-3">
+                            <select id="apart-p1" class="w-full border rounded-md p-2 bg-white"></select>
+                            <span class="p-2">≠</span>
+                            <select id="apart-p2" class="w-full border rounded-md p-2 bg-white"></select>
+                            <button id="add-apart-btn" class="btn-primary px-4 py-2 rounded-md font-semibold">+</button>
+                        </div>
+                        <div id="apart-list" class="space-y-2 max-h-64 overflow-y-auto">
+                            <!-- Apart pairs will be injected here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="mt-auto border-t pt-6">
                     <button id="solve-btn" class="w-full btn-primary py-3 rounded-md text-lg font-bold">Find Seating Arrangement</button>
                      <div id="solution-nav" class="hidden items-center justify-between mt-4">
                         <button id="prev-solution" class="btn-primary px-4 py-2 rounded-md">&lt; Prev</button>
@@ -157,7 +185,6 @@
                         <button id="next-solution" class="btn-primary px-4 py-2 rounded-md">Next &gt;</button>
                     </div>
                 </div>
-
             </div>
 
             <!-- Seating Arrangement Column -->
@@ -191,7 +218,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             // --- INITIAL DATA ---
             const initialGuests = ['sarah', 'benni', 'peter', 'gaby', 'simon', 'corinna', 'siegrid', 'erika', 'larissa', 'herwig', 'liam', 'gabi', 'michi', 'brigitte', 'fredi', 'natascha', 'daniel1', 'felix', 'anna1', 'karin', 'sebastian', 'anna2', 'joni', 'leni', 'betti', 'daniel2', 'christiane', 'harald', 'theodor', 'pauline', 'heidi', 'rudi', 'regina', 'amelie', 'paul', 'tobias', 'patrick', 'melina', 'stefan'];
-            const initialTogether = [['sarah', 'benni'], ['simon', 'corinna'], ['gaby', 'peter'], ['larissa', 'herwig'], ['herwig', 'liam'], ['michi', 'gabi'], ['joni', 'leni'], ['benni', 'joni'], ['sarah', 'simon'], ['sebastian', 'anna1'], ['rudi', 'heidi'], ['betti', 'karin'], ['anna2', 'felix'], ['natascha', 'daniel1'], ['brigitte', 'fredi'], ['natascha', 'felix']];
+            const initialTogether = [['siegrid', 'gabi'], ['sarah', 'benni'], ['simon', 'corinna'], ['gaby', 'peter'], ['larissa', 'herwig'], ['herwig', 'liam'], ['michi', 'gabi'], ['joni', 'leni'], ['benni', 'joni'], ['sarah', 'simon'], ['sebastian', 'anna1'], ['rudi', 'heidi'], ['betti', 'karin'], ['anna2', 'felix'], ['natascha', 'daniel1'], ['brigitte', 'fredi'], ['natascha', 'felix']];
             const initialApart = [['peter', 'siegrid'], ['erika', 'peter'], ['siegrid', 'betti']];
             const TABLE_COUNT = 5;
             const TABLE_CAPACITY = 8;
@@ -227,6 +254,28 @@
             const modalTitle = document.getElementById('modal-title');
             const modalText = document.getElementById('modal-text');
             const modalCloseBtn = document.getElementById('modal-close-btn');
+
+            // Tab UI elements
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            // --- TAB LOGIC ---
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const tabName = button.dataset.tab;
+
+                    tabButtons.forEach(btn => btn.classList.remove('active-tab'));
+                    button.classList.add('active-tab');
+
+                    tabContents.forEach(content => {
+                        if (content.id === `${tabName}-tab-content`) {
+                            content.classList.add('active');
+                        } else {
+                            content.classList.remove('active');
+                        }
+                    });
+                });
+            });
 
             // --- CORE UI FUNCTIONS ---
             
@@ -295,7 +344,6 @@
 
             const removeGuest = (name) => {
                 guests = guests.filter(g => g !== name);
-                // Also remove any constraints involving this guest
                 togetherPairs = togetherPairs.filter(p => !p.includes(name));
                 apartPairs = apartPairs.filter(p => !p.includes(name));
                 updateAllUI();
@@ -351,7 +399,7 @@
 
                 solution.forEach((tableGuests, index) => {
                     const tableWrapper = document.createElement('div');
-                    tableWrapper.className = 'flex flex-col items-center';
+                    tableWrapper.className = 'flex flex-col items-center gap-4';
 
                     const tableEl = document.createElement('div');
                     tableEl.className = 'table-circle';
@@ -384,10 +432,8 @@
 
             // --- SOLVER LOGIC ---
             function solveSeating() {
-                // 1. Group guests who must sit together
                 const { groups, individualGuests } = groupGuests();
 
-                // 2. Check for immediate impossibilities
                 if (groups.some(g => g.length > TABLE_CAPACITY)) {
                     showModal("Impossible Arrangement", "A 'together' group is larger than the table capacity.");
                     return [];
@@ -398,7 +444,6 @@
                     return [];
                 }
 
-                // 3. Setup for backtracking
                 const itemsToPlace = [...groups, ...individualGuests.map(g => [g])];
                 const finalSolutions = [];
                 const currentArrangement = Array.from({ length: TABLE_COUNT }, () => []);
@@ -408,8 +453,6 @@
                 return finalSolutions;
             }
             
-            // --- BUG FIX: Replaced original groupGuests function ---
-            // This version is more robust and ensures all guests are accounted for.
             function groupGuests() {
                 const adj = new Map();
                 guests.forEach(g => adj.set(g, []));
@@ -431,7 +474,6 @@
                         while (queue.length > 0) {
                             const current = queue.shift();
                             component.push(current);
-                            // Note: Safely accessing neighbors even if guest isn't in a pair
                             (adj.get(current) || []).forEach(neighbor => {
                                 if (!visited.has(neighbor)) {
                                     visited.add(neighbor);
@@ -451,12 +493,10 @@
             }
 
             function isPlacementValid(item, table, arrangement) {
-                // Check capacity
                 if (arrangement[table].length + item.length > TABLE_CAPACITY) {
                     return false;
                 }
                 
-                // Check "apart" constraints for every person in the item against every person at the table
                 const tableGuests = arrangement[table];
                 for (const newItemGuest of item) {
                     for (const existingGuest of tableGuests) {
@@ -474,10 +514,10 @@
             }
 
             function backtrack(itemIndex, items, arrangement, finalSolutions) {
-                if (finalSolutions.length >= 20) return; // Limit number of solutions for performance
+                if (finalSolutions.length >= 20) return; 
                 
                 if (itemIndex === items.length) {
-                    finalSolutions.push(arrangement.map(t => [...t])); // Found a solution
+                    finalSolutions.push(arrangement.map(t => [...t]));
                     return;
                 }
 
@@ -487,7 +527,6 @@
                     if (isPlacementValid(currentItem, tableIdx, arrangement)) {
                         arrangement[tableIdx].push(...currentItem);
                         backtrack(itemIndex + 1, items, arrangement, finalSolutions);
-                        // Backtrack: remove the item
                         arrangement[tableIdx].splice(arrangement[tableIdx].length - currentItem.length);
                         
                         if (finalSolutions.length >= 20) return;
@@ -510,7 +549,6 @@
                 messageArea.textContent = '';
                 solutionNav.classList.add('hidden');
                 
-                // Allow UI to update before heavy computation
                 setTimeout(() => {
                     solutions = solveSeating();
                     loadingSpinner.style.display = 'none';
@@ -521,7 +559,7 @@
                         solutionNav.classList.remove('hidden');
                         solutionInfo.textContent = `Solution 1 of ${solutions.length}`;
                     } else {
-                        drawTables(null); // Will show error message
+                        drawTables(null);
                         showModal("No Solution Found", "Could not find any valid seating arrangements with the current rules. Try removing some constraints.");
                     }
                 }, 50);
